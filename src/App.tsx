@@ -9,10 +9,17 @@ interface ICurrencyInformation {
   Value: number;
 }
 
+interface ICurrencyOptions {
+  ID: string;
+  CharCode: string;
+  Value: number;
+}
 
 function App() {
 
   const [data, setData] = useState<ICurrencyInformation[]>([])
+  const [currencyOptions, setCurrencyOptions] = useState<ICurrencyOptions[]>([])
+  const [firstCurrencyList, setFirstCurrencyList] = useState<number[]>([])
 
   useEffect(() => {
     fetch('https://www.cbr-xml-daily.ru/daily_json.js')
@@ -20,15 +27,28 @@ function App() {
       .then(data => data.Valute)
       .then(valuteInformation => {
         const listOfValute = Object.values<ICurrencyInformation>(valuteInformation)
-        setData([...listOfValute])
+        setData(listOfValute)
+        setCurrencyOptions(listOfValute.map(item =>({...item, ID: item.ID, CharCode: item.CharCode, Value: item.Value})))
+        setFirstCurrencyList(listOfValute.map(item => item.Value))
       })
       .catch(err => console.error(err.message))
   }, [])
-
-  console.log('data', data)
+  const changeValue = (value: any) => {
+    setData(data.map((item, index) => ({ ...item, Value: ((firstCurrencyList[index] / item.Nominal) / value) })))
+  }
+  
   return (
     <div>
-      <div>+100</div>
+      <select onChange={(e: any) => changeValue(e.target.value)} >
+        {currencyOptions.map(item =>
+            <option
+            key={item.ID}
+            value={item.Value}
+            >
+            {item.CharCode}
+            </option>
+      )}
+      </select>
       <table>
         <thead>
           <tr>
@@ -39,7 +59,7 @@ function App() {
           </tr>
         </thead>
         <tbody>
-          {Array.isArray(data) && data.map((item: any) =>
+          {data.map((item: any) =>
             <tr key={item.ID}>
               <td>{item.Name}</td>
               <td>{item.Nominal}</td>
